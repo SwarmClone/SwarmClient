@@ -21,10 +21,16 @@ def main(argv: list[str]):
     """主循环"""
     main_window = MainWindow(*result[0])
     main_window.show()
+    exit_event = asyncio.Event()
     with loop:
-        loop.create_task(main_window.listen())
-        loop.create_task(main_window.record())
-        loop.run_forever()
+        listen_task = loop.create_task(main_window.listen())
+        record_task = loop.create_task(main_window.record())
+        app.aboutToQuit.connect(lambda: (
+            listen_task.cancel(),
+            record_task.cancel(),
+            exit_event.set()
+        ))
+        loop.run_until_complete(exit_event.wait())
     return 0
 
 if __name__ == "__main__":
